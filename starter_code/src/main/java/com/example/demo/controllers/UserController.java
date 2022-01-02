@@ -2,6 +2,7 @@ package com.example.demo.controllers;
 
 import java.util.Optional;
 
+import org.apache.logging.log4j.jul.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,7 @@ import com.example.demo.model.requests.CreateUserRequest;
 @RequestMapping("/api/user")
 public class UserController {
 	final Logger logger = LoggerFactory.getLogger(UserController.class);
-	
+
 	@Autowired
 	private UserRepository userRepository;
 	
@@ -43,8 +44,11 @@ public class UserController {
 	@GetMapping("/{username}")
 	public ResponseEntity<User> findByUserName(@PathVariable String username) {
 		User user = userRepository.findByUsername(username);
-		if (user == null)
+		if (user == null) {
 			logger.error("can't find user {}.", username);
+		} else {
+			logger.info("Found user {}.", username);
+		}
 		return user == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(user);
 	}
 	
@@ -55,14 +59,16 @@ public class UserController {
 		Cart cart = new Cart();
 		cartRepository.save(cart);
 		if (
-				createUserRequest.getPassword().length() <= 6 ||
+				createUserRequest.getPassword().length() <7 ||
 						!createUserRequest.getPassword().equals(createUserRequest.getConfirmPassword())
 		) {
+			logger.error("couldn't create user {}.", user.getUsername());
 			return ResponseEntity.badRequest().build();
 		}
 		user.setPassword(bCryptPasswordEncoder.encode(createUserRequest.getPassword()));
 		user.setCart(cart);
 		userRepository.save(user);
+		logger.info("created user {}.", user.getUsername());
 		return ResponseEntity.ok(user);
 	}
 	
